@@ -1,0 +1,36 @@
+jupyter-book
+jupyterlab_myst
+matplotlib
+numpy
+pandas
+openpyxl
+datetime
+requests
+river == 0.21.2 # version number needed. if not included -> rust error
+cassandra-driver
+pyspark < 4.0.0
+mysql.connector
+flask
+pybaselines
+pyjstat
+statsmodels==0.14.4
+scipy<=1.15.3
+hoggorm
+hoggormplot
+scikit-learn
+ipywidgets
+plotly
+pydub
+sounddevice
+kaleido
+lipsum
+bs4
+pymongo
+pymongoarrow
+writer
+geopy
+meteostat
+missingno
+lxml
+# pmdarima
+
