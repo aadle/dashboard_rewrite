@@ -20,18 +20,34 @@ for table in mongodb_tables:
             )
         print(f"{table} is now in the session state.")
 
-# cas_tables = ["production", "prodcons", "consumption"]
-# for table in cas_tables:
-#     if table not in st.session_state:
-#         st.session_state[table] = retrieve_from_cas(
-#             spark, table, "rewrite320"
-#         ).sort_values("hourutc")
-#     print(f"{table} is now in the session state.")
+st.session_state["municipalities"] = st.session_state["municipalities"].sort_values("municipality")
+
+cas_tables = ["production", "prodcons", "consumption"]
+for table in cas_tables:
+    if table not in st.session_state:
+        st.session_state[table] = retrieve_from_cas(
+            spark, table, "rewrite320"
+        ).sort_values("hourutc")
+    print(f"{table} is now in the session state.")
 
 if "weather" not in st.session_state:
-    st.session_state["weather"] = retrieve_from_cas(
+    df_weather = retrieve_from_cas(
         spark, "weather", "rewrite320"
     ).sort_values("time")
+
+    df_weather = df_weather.rename(columns={"time": "hourutc"})
+    df_weather[
+    [
+        "coco", "dwpt", "prcp", "pres", "rhum", "snow", "temp", "tsun", "wdir",
+        "wpgt","wspd",
+    ]
+] = df_weather[
+    [
+        "coco", "dwpt", "prcp", "pres", "rhum", "snow", "temp", "tsun", "wdir",
+        "wpgt","wspd",
+    ]
+].astype(float)
+    st.session_state["weather"] = df_weather
     print("Weather is now in the session state.")
 
 
