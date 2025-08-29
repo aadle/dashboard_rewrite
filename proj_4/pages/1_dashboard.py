@@ -122,8 +122,7 @@ def power_map_plot(df:pd.DataFrame):
             lat=df_cities.lat,
             marker=dict(
                 size=15
-
-            )
+            ),
         )
     )
     fig.update_layout(
@@ -262,7 +261,7 @@ with col_2:
                 'exchangegb_mwh', 'exchangege_mwh','exchangenl_mwh', 
                 'exchangeno_mwh', 'exchangese_mwh', "hourutc",
             ]
-        ]
+        ].loc[df_table.hourutc == date_time, :]
             st.text(df_pie.columns)
         elif selected_table != "Consumption":
             df_line = df_table[df_table.municipality ==
