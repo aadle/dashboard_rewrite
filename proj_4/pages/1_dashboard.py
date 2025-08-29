@@ -121,7 +121,7 @@ def power_map_plot(df:pd.DataFrame):
             lon=df_cities.lon,
             lat=df_cities.lat,
             marker=dict(
-                size=15
+                size=14
             ),
         )
     )
