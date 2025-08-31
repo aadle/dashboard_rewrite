@@ -1,4 +1,4 @@
-# Rewrite of IND320-project (w.i.p)
+# Energy dashboard (data to decision)
 
 The goal of the project is to create a dashboard with showing various
 measurements of electricity production and weather forecast in Denmark in the
