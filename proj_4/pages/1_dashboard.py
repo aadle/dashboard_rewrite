@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 from scipy.fft import dct, idct
 
 def dct_smoothing(df:pd.DataFrame, column:str, max_val:int=10):
@@ -76,7 +77,8 @@ def map_plot(df:pd.DataFrame, column:str, df_municipality:pd.DataFrame,
             hovertext=df_municipality.municipality,
             customdata=df[column].values,
             hovertemplate="%{hovertext}<br>" +
-                "(%{lat:.5f}, %{lon:.5f})<br>" + "%{customdata:.2f}",
+                "(%{lat:.5f}, %{lon:.5f})<br>" + 
+                "%{customdata:.2f}",
             name=None,
             marker=dict(
                 size=marker_values * size,
@@ -99,32 +101,136 @@ def map_plot(df:pd.DataFrame, column:str, df_municipality:pd.DataFrame,
     )
     return fig
 
-def power_map_plot(df:pd.DataFrame):
+def power_pie_plot(df:pd.DataFrame, df_maximas:pd.DataFrame):
+    fig = make_subplots(
+    rows=2, cols=2,
+    specs=[[{"type": "pie"}, {"type": "pie"}],
+           [{"type": "pie"}, {"type": "pie"}]],
+    subplot_titles=('Norway', 'Sweden', 'Netherlands', 'Germany')
+)
+
+    countries = {
+        'Norway': ('exchangeno_mwh', 1, 1),
+        'Sweden': ('exchangese_mwh', 1, 2), 
+        'Netherlands': ('exchangenl_mwh', 2, 1),
+        'Germany': ('exchangege_mwh', 2, 2)
+    }
+
+    export_color = '#2E8B57'  
+    import_color = '#DC143C' 
+    unused_color = '#D3D3D3'
+
+    for country, (col_name, row, col) in countries.items():
+        actual_exchange = df[col_name].sum()
+        max_capacity = df_maximas[col_name].sum()  
+        
+        abs_exchange = abs(actual_exchange)
+        remaining_capacity = max_capacity - abs_exchange
+        
+        is_export = actual_exchange >= 0 # determine if import/export
+        
+        values = [abs_exchange, remaining_capacity]
+        labels = [
+            f"{'Export' if is_export else 'Import'}: {abs_exchange:.1f} MWh",
+            f"Unused: {remaining_capacity:.1f} MWh"
+        ]
+        colors = [export_color if is_export else import_color, unused_color]
+        
+        fig.add_trace(
+            go.Pie(
+                values=values,
+                labels=labels,
+                marker=dict(colors=colors),
+                name=country,
+                hole=0.4,
+                textinfo='label+percent',
+                textposition='auto'
+            ),
+            row=row, col=col
+        )
+
+    # Update layout
+    fig.update_layout(
+        title_text="Energy Exchange Utilization by Country<br><sub>Green: Export | Red: Import | Gray: Unused Capacity</sub>",
+        height=600,
+        showlegend=False,  # Individual labels are more informative
+        font=dict(size=10)
+    )
+
+    return fig
+
+def power_map_plot(df:pd.DataFrame, df_maximas:pd.DataFrame):
     df_cities = pd.DataFrame(
             [
             {"city": "Oslo", "lat": 59.9139, "lon": 10.7522, "country":"Norway"},
             {"city": "Stockholm", "lat": 59.3327, "lon": 18.0656,
              "country":"Sweden"},
-            {"city": "Copenhagen", "lat": 55.6761, "lon": 12.5683,
-             "country":"Denmark"},
             {"city": "Amsterdam", "lat": 52.3676, "lon": 4.9041,
              "country":"Netherlands"},
-            {"city": "London", "lat": 51.5072, "lon": 0.1276, 
-             "country":"Great Britain"},
             {"city": "Berlin", "lat": 52.5200, "lon": 13.4050,
              "country":"Germany"},
+            {"city": "Copenhagen", "lat": 55.6761, "lon": 12.5683,
+             "country":"Denmark"},
+            {"city": "London", "lat": 51.5072, "lon": 0.1276, 
+             "country":"Great Britain"},
             ]
         )
+
+    usage_of_max_pct = np.abs(df.values / df_maximas.values).flatten().tolist()
+
     fig = go.Figure()
+
+    # Dynamic traces
+    df_cities_dynamic = df_cities.iloc[:-2, :]
     fig.add_trace(
         go.Scattermap(
-            lon=df_cities.lon,
-            lat=df_cities.lat,
+            lon=df_cities_dynamic.lon,
+            lat=df_cities_dynamic.lat,
             marker=dict(
-                size=14
+                cmin=0,
+                cmax=1,
+                size=14,
+                # colorscale="Viridis",
+                colorscale=[
+                [0, 'green'], 
+                [0.8, 'yellow'], 
+                [0.95, 'red'],
+                [1.0, 'darkred'],
+                ],
+                color=usage_of_max_pct,
+                
             ),
+           
         )
     )
+
+    # Static traces
+    fig.add_trace(
+        go.Scattermap(
+            lon=[ df_cities.iloc[-1, :].lon ],
+            lat=[ df_cities.iloc[-1, :].lat ],
+            marker=dict(
+                size=14,
+                color="black",
+                opacity=1.0
+            ),
+           
+        )
+    ) # Great Britain
+
+    fig.add_trace(
+        go.Scattermap(
+            lon=[ df_cities.iloc[-2, :].lon ],
+            lat=[ df_cities.iloc[-2, :].lat ],
+            marker=dict(
+                size=14,
+                color="blue"
+            ),
+           
+        )
+    ) # Denmark
+
+    # Figure layout
     fig.update_layout(
     map=dict(
         center=dict(
@@ -136,12 +242,13 @@ def power_map_plot(df:pd.DataFrame):
     hoverlabel=dict(
         bgcolor="white",
         font_size=11,
-    )
+    ),
+    showlegend=False
 )
     return fig
 
 # Sidebar
-st.sidebar.markdown("# Main page 🎈")
+st.sidebar.markdown("# Dashboard 🖥️")
 
 # Main page content
 # data_sources = {"Production": "production",
@@ -174,7 +281,7 @@ data_sources = {
 
 top_col_1, top_col_2 = st.columns(spec=[0.65, 0.35])
 with top_col_1:
-    st.markdown("# Main page 🎈")
+    st.markdown("# Energy production in Denmark 🇩🇰")
 
 with top_col_2:
     selected_table = st.selectbox(
@@ -256,19 +363,29 @@ with col_2:
 
         # Plotting the line plot
         if selected_table == "Power import/export":
+
+            # Data setup
             df_pie = df_table[
             [
-                'exchangegb_mwh', 'exchangege_mwh','exchangenl_mwh', 
-                'exchangeno_mwh', 'exchangese_mwh', "hourutc",
+                'exchangeno_mwh', 'exchangese_mwh', 'exchangenl_mwh',
+                'exchangege_mwh', "hourutc",
+                # 'exchangegb_mwh', 
             ]
-        ].loc[df_table.hourutc == date_time, :]
-            st.text(df_pie.columns)
+        ]\
+            .groupby("hourutc").agg("sum")
+            df_power_map = df_pie.loc[df_pie.index == date_time, :]
+            df_power_maximas = pd.DataFrame(df_pie.abs().max()).T
+
+            # Plot
+            st.plotly_chart(power_pie_plot(df_power_map, df_power_maximas))
+
         elif selected_table != "Consumption":
             df_line = df_table[df_table.municipality ==
             municipality][["hourutc", "municipality", data_column]]
             smoothed_data = dct_smoothing(df_line, data_column, max_val=max_val)
             df_line["smoothed_signal"] = smoothed_data
             st.plotly_chart(line_plot(df_line, data_column))
+
         elif selected_table == "Consumption":
             # st.text("Need to aggregate")
             df_line = df_table[df_table.municipality == municipality]
@@ -328,7 +445,8 @@ with col_1:
             )
     else:
         st.plotly_chart(
-            power_map_plot(df_pie)
+            power_map_plot(df_power_map, df_power_maximas)
         )
-        pass
+        # st.write(df_power_map)
+        # st.write(df_power_maximas)
 

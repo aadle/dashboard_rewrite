@@ -21,6 +21,7 @@ for table in mongodb_tables:
         print(f"{table} is now in the session state.")
 
 st.session_state["municipalities"] = st.session_state["municipalities"].sort_values("municipality")
+st.session_state["gas"] = st.session_state["gas"].sort_values("gasday")
 
 cas_tables = ["production", "prodcons", "consumption"]
 for table in cas_tables:
@@ -57,7 +58,7 @@ correlation_page = st.Page("pages/2_correlation_page.py", title="Correlation")
 summaries_page = st.Page("pages/3_summaries_page.py", title="Summaries")
 forecasting_page = st.Page("pages/4_forecasting_page.py", title="Forecasting")
 
-pages = [main_page, summaries_page, correlation_page, forecasting_page]
+pages = [main_page, correlation_page, summaries_page,  forecasting_page]
 pg = st.navigation(pages)
 
 pg.run()
